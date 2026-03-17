@@ -1,0 +1,3003 @@
+API Introduction
+zMenu provides a comprehensive API for developers to integrate with and extend the plugin's functionality. This guide will help you get started with the zMenu API.
+
+Javadoc
+The complete API documentation is available at: https://repo.groupez.dev/javadoc/releases/fr/maxlego08/menu/zmenu-api/1.1.0.6
+
+Maven Repository
+Add the GroupeZ repository to your pom.xml:
+
+<repositories>
+    <repository>
+        <id>groupez</id>
+        <url>https://repo.groupez.dev/releases</url>
+    </repository>
+</repositories>
+
+Maven Dependency
+Add the zMenu API as a dependency:
+
+<dependencies>
+    <dependency>
+        <groupId>fr.maxlego08.menu</groupId>
+        <artifactId>zmenu-api</artifactId>
+        <version>1.1.0.0</version>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+
+Gradle
+For Gradle users:
+
+repositories {
+    maven { url 'https://repo.groupez.dev/releases' }
+}
+
+dependencies {
+    compileOnly 'fr.maxlego08.menu:zmenu-api:1.1.0.0'
+}
+
+Kotlin DSL
+repositories {
+    maven("https://repo.groupez.dev/releases")
+}
+
+dependencies {
+    compileOnly("fr.maxlego08.menu:zmenu-api:1.1.0.0")
+}
+
+Plugin Dependency
+Add zMenu as a dependency in your plugin.yml:
+
+# Hard dependency (plugin won't load without zMenu)
+depend: [zMenu]
+
+# Soft dependency (plugin will load even without zMenu)
+softdepend: [zMenu]
+
+Getting the API
+Access the Plugin Instance
+import fr.maxlego08.menu.api.MenuPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class MyPlugin extends JavaPlugin {
+
+    private MenuPlugin menuPlugin;
+
+    @Override
+    public void onEnable() {
+        // Get zMenu instance
+        this.menuPlugin = (MenuPlugin) Bukkit.getPluginManager().getPlugin("zMenu");
+
+        if (this.menuPlugin == null) {
+            getLogger().severe("zMenu not found! Disabling plugin...");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        getLogger().info("Successfully hooked into zMenu!");
+    }
+
+    public MenuPlugin getMenuPlugin() {
+        return this.menuPlugin;
+    }
+}
+
+Safe Hook with Soft Dependency
+import fr.maxlego08.menu.api.MenuPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class MyPlugin extends JavaPlugin {
+
+    private MenuPlugin menuPlugin;
+    private boolean zMenuEnabled = false;
+
+    @Override
+    public void onEnable() {
+        // Try to hook into zMenu
+        hookZMenu();
+
+        if (zMenuEnabled) {
+            getLogger().info("zMenu integration enabled!");
+            // Register zMenu-specific features
+        } else {
+            getLogger().info("zMenu not found, running without integration.");
+        }
+    }
+
+    private void hookZMenu() {
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("zMenu");
+        if (plugin != null && plugin.isEnabled()) {
+            this.menuPlugin = (MenuPlugin) plugin;
+            this.zMenuEnabled = true;
+        }
+    }
+
+    public boolean isZMenuEnabled() {
+        return this.zMenuEnabled;
+    }
+
+    public MenuPlugin getMenuPlugin() {
+        return this.menuPlugin;
+    }
+}
+
+Core Interfaces
+The zMenu API provides several core interfaces:
+
+MenuPlugin
+The main plugin interface providing access to all managers:
+
+MenuPlugin menuPlugin = ...;
+
+// Inventory management
+InventoryManager inventoryManager = menuPlugin.getInventoryManager();
+
+// Button type registration
+ButtonManager buttonManager = menuPlugin.getButtonManager();
+
+// Command management
+CommandManager commandManager = menuPlugin.getCommandManager();
+
+// Player data management
+DataManager dataManager = menuPlugin.getDataManager();
+
+Key Managers
+Manager	Purpose
+InventoryManager	Load, manage, and open inventories
+ButtonManager	Register custom button types
+CommandManager	Register custom commands
+DataManager	Access player data storage
+API Structure
+fr.maxlego08.menu.api
+├── MenuPlugin              # Main plugin interface
+├── InventoryManager        # Inventory operations
+├── ButtonManager           # Button registration
+├── CommandManager          # Command handling
+├── DataManager             # Player data access
+├── button/
+│   ├── Button              # Button interface
+│   └── ButtonLoader        # Button loading
+├── action/
+│   ├── Action              # Action interface
+│   └── ActionLoader        # Action loading
+├── requirement/
+│   ├── Requirement         # Requirement interface
+│   └── Permissible         # Permission checking
+└── event/
+    ├── ButtonLoadEvent
+    ├── InventoryLoadEvent
+    └── PlayerOpenInventoryEvent
+
+Best Practices
+Always check for null when getting the zMenu plugin instance
+Use soft dependencies if your plugin can function without zMenu
+Don't store manager references - get them fresh when needed
+Handle exceptions gracefully when working with inventories
+Test thoroughly with different zMenu versions
+Complete Example Plugin
+package com.example.myplugin;
+
+import fr.maxlego08.menu.api.MenuPlugin;
+import fr.maxlego08.menu.api.InventoryManager;
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class MyPlugin extends JavaPlugin {
+
+    private MenuPlugin menuPlugin;
+
+    @Override
+    public void onEnable() {
+        // Hook into zMenu
+        this.menuPlugin = (MenuPlugin) Bukkit.getPluginManager().getPlugin("zMenu");
+
+        if (this.menuPlugin == null) {
+            getLogger().severe("zMenu is required!");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        getLogger().info("MyPlugin enabled with zMenu integration!");
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command,
+                            String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Players only!");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        InventoryManager manager = menuPlugin.getInventoryManager();
+
+        // Open a zMenu inventory
+        manager.getInventory("my-menu").ifPresent(inv -> {
+            manager.openInventory(player, inv);
+        });
+
+        return true;
+    }
+}
+
+Next Steps
+Learn how to Open Inventories programmatically
+Create Custom Buttons
+Create Custom Actions
+Work with Player Data
+Listen to Events
+
+Inventory API
+Learn how to open and manage zMenu inventories programmatically using the API.
+
+InventoryManager
+The InventoryManager is your main interface for working with inventories.
+
+InventoryManager manager = menuPlugin.getInventoryManager();
+
+Getting Inventories
+Get by Name
+// Returns Optional<Inventory>
+Optional<Inventory> inventory = manager.getInventory("shop");
+
+// Check if inventory exists
+if (inventory.isPresent()) {
+    Inventory inv = inventory.get();
+    // Work with inventory
+}
+
+// Or use ifPresent
+manager.getInventory("shop").ifPresent(inv -> {
+    // Work with inventory
+});
+
+Get All Inventories
+// Get all loaded inventories
+Collection<Inventory> allInventories = manager.getInventories();
+
+for (Inventory inventory : allInventories) {
+    String name = inventory.getName();
+    int size = inventory.size();
+    // Process inventory
+}
+
+Check If Inventory Exists
+boolean exists = manager.getInventory("shop").isPresent();
+
+Opening Inventories
+Basic Opening
+manager.getInventory("shop").ifPresent(inv -> {
+    manager.openInventory(player, inv);
+});
+
+Open at Specific Page
+manager.getInventory("catalog").ifPresent(inv -> {
+    manager.openInventory(player, inv, 3); // Open page 3
+});
+
+Open with Arguments
+Pass custom arguments to the inventory that can be used in placeholders:
+
+List<String> arguments = new ArrayList<>();
+arguments.add("swords");      // Argument 1
+arguments.add("diamond");     // Argument 2
+
+manager.getInventory("category-shop").ifPresent(inv -> {
+    manager.openInventory(player, inv, 1, arguments);
+});
+
+Open for Another Player
+Player target = Bukkit.getPlayer("Notch");
+
+manager.getInventory("admin-view").ifPresent(inv -> {
+    manager.openInventory(target, inv);
+});
+
+Inventory Interface
+The Inventory interface provides information about loaded inventories:
+
+manager.getInventory("shop").ifPresent(inv -> {
+    // Get inventory properties
+    String name = inv.getName();           // Display name
+    String fileName = inv.getFileName();   // File name without extension
+    int size = inv.size();                 // Inventory size (9-54)
+    Plugin plugin = inv.getPlugin();       // Plugin that registered it
+
+    // Get buttons
+    List<Button> buttons = inv.getButtons();
+
+    // Check if inventory has pages
+    int maxPage = inv.getMaxPage(player);
+});
+
+Creating Inventory Engines
+For more control, you can work with InventoryEngine directly:
+
+manager.getInventory("shop").ifPresent(inv -> {
+    // Create an engine instance for this player
+    InventoryEngine engine = manager.createInventoryEngine(player, inv);
+
+    // Open with the engine
+    engine.open();
+
+    // Or open at specific page
+    engine.open(2);
+});
+
+Closing Inventories
+Close for Player
+// Close current inventory
+player.closeInventory();
+
+Check If Player Has zMenu Open
+// Check if player has any zMenu inventory open
+boolean hasMenuOpen = manager.hasPlayerInventory(player);
+
+Working with Plugin-Specific Inventories
+When multiple plugins register inventories with the same name, you need to specify which plugin's inventory you want to access.
+
+Get Inventory by Name and Plugin Instance
+// Get inventory using your plugin instance
+Optional<Inventory> inventory = manager.getInventory(myPlugin, "shop");
+
+inventory.ifPresent(inv -> {
+    manager.openInventory(player, inv);
+});
+
+Get Inventory by Name and Plugin Name
+// Get inventory from a specific plugin by name
+Optional<Inventory> inventory = manager.getInventory("shop", "MyPlugin");
+
+// Example: Get inventory from zAuctionHouse plugin
+Optional<Inventory> auctionInventory = manager.getInventory("auction", "zAuctionHouse");
+
+auctionInventory.ifPresent(inv -> {
+    manager.openInventory(player, inv);
+});
+
+Complete Example: Plugin Integration
+public class InventoryService {
+
+    private final Plugin plugin;
+    private final InventoryManager inventoryManager;
+
+    public InventoryService(Plugin plugin, MenuPlugin menuPlugin) {
+        this.plugin = plugin;
+        this.inventoryManager = menuPlugin.getInventoryManager();
+    }
+
+    /**
+     * Opens an inventory registered by this plugin
+     */
+    public void openOwnInventory(Player player, String inventoryName) {
+        inventoryManager.getInventory(plugin, inventoryName).ifPresent(inv -> {
+            inventoryManager.openInventory(player, inv);
+        });
+    }
+
+    /**
+     * Opens an inventory registered by another plugin
+     */
+    public void openExternalInventory(Player player, String pluginName, String inventoryName) {
+        inventoryManager.getInventory(inventoryName, pluginName).ifPresent(inv -> {
+            inventoryManager.openInventory(player, inv);
+        });
+    }
+
+    /**
+     * Opens an inventory with pagination support
+     */
+    public void openInventoryAtPage(Player player, String inventoryName, int page) {
+        inventoryManager.getInventory(plugin, inventoryName).ifPresent(inv -> {
+            inventoryManager.openInventory(player, inv, page);
+        });
+    }
+
+    /**
+     * Opens an inventory preserving the navigation history
+     * Allows players to go back to previous inventories
+     */
+    public void openWithHistory(Player player, String inventoryName, int page) {
+        inventoryManager.getInventory(plugin, inventoryName).ifPresent(inv -> {
+            inventoryManager.openInventoryWithOldInventories(player, inv, page);
+        });
+    }
+}
+
+Using Enums for Inventory Names
+A common pattern is to define your inventory names in an enum:
+
+public enum Inventories {
+
+    MAIN_MENU("main-menu"),
+    SHOP("shop"),
+    SETTINGS("settings"),
+    CONFIRM("confirm");
+
+    private final String fileName;
+
+    Inventories(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+}
+
+Then use it in your loader:
+
+public class MyInventoryLoader {
+
+    private final Plugin plugin;
+    private final InventoryManager inventoryManager;
+
+    public MyInventoryLoader(Plugin plugin, InventoryManager inventoryManager) {
+        this.plugin = plugin;
+        this.inventoryManager = inventoryManager;
+    }
+
+    public void openInventory(Player player, Inventories inventory) {
+        openInventory(player, inventory, 1);
+    }
+
+    public void openInventory(Player player, Inventories inventory, int page) {
+        var optional = inventoryManager.getInventory(plugin, inventory.getFileName());
+
+        if (optional.isEmpty()) {
+            plugin.getLogger().warning("Inventory not found: " + inventory.getFileName());
+            player.sendMessage("§cInventory not found!");
+            return;
+        }
+
+        inventoryManager.openInventoryWithOldInventories(player, optional.get(), page);
+    }
+}
+
+Refreshing Inventories
+Force refresh an open inventory:
+
+// This is typically handled internally, but you can trigger updates
+// through button actions or events
+
+Example: Shop System
+public class ShopManager {
+
+    private final MenuPlugin menuPlugin;
+
+    public ShopManager(MenuPlugin menuPlugin) {
+        this.menuPlugin = menuPlugin;
+    }
+
+    public void openShop(Player player) {
+        InventoryManager manager = menuPlugin.getInventoryManager();
+
+        manager.getInventory("shop-main").ifPresent(inv -> {
+            manager.openInventory(player, inv);
+        });
+    }
+
+    public void openCategory(Player player, String category) {
+        InventoryManager manager = menuPlugin.getInventoryManager();
+
+        List<String> args = Collections.singletonList(category);
+
+        manager.getInventory("shop-category").ifPresent(inv -> {
+            manager.openInventory(player, inv, 1, args);
+        });
+    }
+
+    public void openPlayerShop(Player viewer, Player shopOwner) {
+        InventoryManager manager = menuPlugin.getInventoryManager();
+
+        List<String> args = Arrays.asList(
+            shopOwner.getName(),
+            shopOwner.getUniqueId().toString()
+        );
+
+        manager.getInventory("player-shop").ifPresent(inv -> {
+            manager.openInventory(viewer, inv, 1, args);
+        });
+    }
+}
+
+Example: Command to Open Menu
+public class MenuCommand implements CommandExecutor {
+
+    private final MenuPlugin menuPlugin;
+
+    public MenuCommand(MenuPlugin menuPlugin) {
+        this.menuPlugin = menuPlugin;
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command,
+                            String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Players only!");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        InventoryManager manager = menuPlugin.getInventoryManager();
+
+        if (args.length == 0) {
+            // Open default menu
+            manager.getInventory("main-menu").ifPresent(inv -> {
+                manager.openInventory(player, inv);
+            });
+        } else {
+            // Open specified menu
+            String menuName = args[0];
+            Optional<Inventory> inventory = manager.getInventory(menuName);
+
+            if (inventory.isPresent()) {
+                manager.openInventory(player, inventory.get());
+            } else {
+                player.sendMessage("Menu not found: " + menuName);
+            }
+        }
+
+        return true;
+    }
+}
+
+Example: Open Menu on Event
+public class JoinListener implements Listener {
+
+    private final MenuPlugin menuPlugin;
+
+    public JoinListener(MenuPlugin menuPlugin) {
+        this.menuPlugin = menuPlugin;
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+
+        // Open welcome menu after 1 second
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                InventoryManager manager = menuPlugin.getInventoryManager();
+
+                manager.getInventory("welcome-menu").ifPresent(inv -> {
+                    manager.openInventory(player, inv);
+                });
+            }
+        }, 20L); // 20 ticks = 1 second
+    }
+}
+
+Best Practices
+Always use Optional - getInventory() returns Optional, handle it properly
+Check player online - Verify player is still online before opening
+Use meaningful names - Inventory names should match your file names
+Handle missing inventories - Provide feedback if inventory doesn't exist
+Don't cache inventories - Get fresh references when needed
+Next Steps
+Create Custom Buttons
+Create Custom Actions
+Work with Player Data
+
+Custom Buttons
+Learn how to create and register custom button types in zMenu.
+
+Overview
+Custom buttons allow you to extend zMenu with new button behaviors. This involves:
+
+Creating a ButtonLoader to parse YAML configuration
+Creating a Button implementation for the behavior
+Registering the loader with the ButtonManager
+ButtonManager
+Get the button manager to register custom buttons:
+
+ButtonManager buttonManager = menuPlugin.getButtonManager();
+
+Creating a Button Loader
+The ButtonLoader interface defines how your button is loaded from YAML:
+
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.loader.ButtonLoader;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+
+public class MyButtonLoader implements ButtonLoader {
+
+    @Override
+    public String getName() {
+        return "MY_CUSTOM_BUTTON"; // The type name used in YAML
+    }
+
+    @Override
+    public Button load(YamlConfiguration configuration, String path, Plugin plugin) {
+        // Read custom properties from configuration
+        String customProperty = configuration.getString(path + ".custom-property", "default");
+        int customNumber = configuration.getInt(path + ".custom-number", 0);
+        boolean customFlag = configuration.getBoolean(path + ".custom-flag", false);
+
+        // Create and return your button instance
+        return new MyCustomButton(customProperty, customNumber, customFlag);
+    }
+}
+
+Creating a Button Implementation
+Implement the Button interface (or extend a base class):
+
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.button.DefaultButtonValue;
+import fr.maxlego08.menu.inventory.inventories.InventoryDefault;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+
+public class MyCustomButton extends DefaultButtonValue implements Button {
+
+    private final String customProperty;
+    private final int customNumber;
+    private final boolean customFlag;
+
+    public MyCustomButton(String customProperty, int customNumber, boolean customFlag) {
+        this.customProperty = customProperty;
+        this.customNumber = customNumber;
+        this.customFlag = customFlag;
+    }
+
+    @Override
+    public String getName() {
+        return "MY_CUSTOM_BUTTON";
+    }
+
+    @Override
+    public void onClick(Player player, InventoryClickEvent event,
+                       InventoryDefault inventory, int slot) {
+        // Your custom click logic here
+        player.sendMessage("Custom button clicked!");
+        player.sendMessage("Property: " + customProperty);
+        player.sendMessage("Number: " + customNumber);
+        player.sendMessage("Flag: " + customFlag);
+
+        // Example: Execute different actions based on configuration
+        if (customFlag) {
+            player.sendMessage("Flag is enabled!");
+        }
+
+        // You can also interact with the inventory
+        // inventory.refresh(player);
+    }
+}
+
+Registering Your Button
+Register your button loader when your plugin enables:
+
+@Override
+public void onEnable() {
+    MenuPlugin menuPlugin = (MenuPlugin) Bukkit.getPluginManager().getPlugin("zMenu");
+
+    if (menuPlugin != null) {
+        // Register custom button
+        menuPlugin.getButtonManager().register(new MyButtonLoader());
+        getLogger().info("Registered custom button: MY_CUSTOM_BUTTON");
+    }
+}
+
+Using Your Custom Button
+In your inventory YAML configuration:
+
+items:
+  my-custom-item:
+    type: MY_CUSTOM_BUTTON
+    slot: 13
+    custom-property: "Hello World"
+    custom-number: 42
+    custom-flag: true
+    item:
+      material: DIAMOND
+      name: "&b&lCustom Button"
+      lore:
+        - "&7This is a custom button!"
+
+Complete Example: Teleport Button
+TeleportButtonLoader.java
+package com.example.buttons;
+
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.loader.ButtonLoader;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+
+public class TeleportButtonLoader implements ButtonLoader {
+
+    @Override
+    public String getName() {
+        return "TELEPORT";
+    }
+
+    @Override
+    public Button load(YamlConfiguration config, String path, Plugin plugin) {
+        String worldName = config.getString(path + ".world", "world");
+        double x = config.getDouble(path + ".x", 0);
+        double y = config.getDouble(path + ".y", 64);
+        double z = config.getDouble(path + ".z", 0);
+        float yaw = (float) config.getDouble(path + ".yaw", 0);
+        float pitch = (float) config.getDouble(path + ".pitch", 0);
+        String message = config.getString(path + ".message", "&aTeleported!");
+
+        World world = Bukkit.getWorld(worldName);
+        Location location = new Location(world, x, y, z, yaw, pitch);
+
+        return new TeleportButton(location, message);
+    }
+}
+
+TeleportButton.java
+package com.example.buttons;
+
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.button.DefaultButtonValue;
+import fr.maxlego08.menu.inventory.inventories.InventoryDefault;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+
+public class TeleportButton extends DefaultButtonValue implements Button {
+
+    private final Location location;
+    private final String message;
+
+    public TeleportButton(Location location, String message) {
+        this.location = location;
+        this.message = message;
+    }
+
+    @Override
+    public String getName() {
+        return "TELEPORT";
+    }
+
+    @Override
+    public void onClick(Player player, InventoryClickEvent event,
+                       InventoryDefault inventory, int slot) {
+        // Close the inventory first
+        player.closeInventory();
+
+        // Teleport the player
+        player.teleport(location);
+
+        // Send message with color codes
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+    }
+}
+
+Usage in YAML
+items:
+  spawn-teleport:
+    type: TELEPORT
+    slot: 13
+    world: "world"
+    x: 0
+    y: 100
+    z: 0
+    yaw: 90
+    pitch: 0
+    message: "&aYou have been teleported to spawn!"
+    item:
+      material: ENDER_PEARL
+      name: "&5&lTeleport to Spawn"
+      lore:
+        - "&7Click to teleport"
+
+Complete Example: Counter Button
+A button that tracks clicks per player:
+
+CounterButtonLoader.java
+package com.example.buttons;
+
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.loader.ButtonLoader;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class CounterButtonLoader implements ButtonLoader {
+
+    // Shared counter storage across all counter buttons
+    private static final Map<UUID, Integer> counters = new HashMap<>();
+
+    @Override
+    public String getName() {
+        return "COUNTER";
+    }
+
+    @Override
+    public Button load(YamlConfiguration config, String path, Plugin plugin) {
+        int maxCount = config.getInt(path + ".max-count", 10);
+        String rewardCommand = config.getString(path + ".reward-command", "");
+
+        return new CounterButton(counters, maxCount, rewardCommand);
+    }
+}
+
+CounterButton.java
+package com.example.buttons;
+
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.button.DefaultButtonValue;
+import fr.maxlego08.menu.inventory.inventories.InventoryDefault;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+
+import java.util.Map;
+import java.util.UUID;
+
+public class CounterButton extends DefaultButtonValue implements Button {
+
+    private final Map<UUID, Integer> counters;
+    private final int maxCount;
+    private final String rewardCommand;
+
+    public CounterButton(Map<UUID, Integer> counters, int maxCount, String rewardCommand) {
+        this.counters = counters;
+        this.maxCount = maxCount;
+        this.rewardCommand = rewardCommand;
+    }
+
+    @Override
+    public String getName() {
+        return "COUNTER";
+    }
+
+    @Override
+    public void onClick(Player player, InventoryClickEvent event,
+                       InventoryDefault inventory, int slot) {
+        UUID uuid = player.getUniqueId();
+
+        // Get current count
+        int currentCount = counters.getOrDefault(uuid, 0);
+        currentCount++;
+
+        // Update counter
+        counters.put(uuid, currentCount);
+
+        player.sendMessage("§aClick count: " + currentCount + "/" + maxCount);
+
+        // Check if max reached
+        if (currentCount >= maxCount) {
+            player.sendMessage("§6You reached the maximum clicks!");
+
+            // Execute reward command
+            if (!rewardCommand.isEmpty()) {
+                String command = rewardCommand.replace("%player%", player.getName());
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+            }
+
+            // Reset counter
+            counters.put(uuid, 0);
+        }
+
+        // Refresh the inventory to update display
+        inventory.refresh(player);
+    }
+}
+
+Advanced: Button with Custom Item Display
+Override the item display based on player state:
+
+@Override
+public ItemStack getCustomItemStack(Player player) {
+    // Return a custom item based on player state
+    int count = counters.getOrDefault(player.getUniqueId(), 0);
+
+    ItemStack item = new ItemStack(Material.PAPER);
+    ItemMeta meta = item.getItemMeta();
+    meta.setDisplayName("§6Counter: " + count + "/" + maxCount);
+    item.setItemMeta(meta);
+
+    return item;
+}
+
+Best Practices
+Use meaningful type names - Make them unique and descriptive
+Validate configuration - Check for missing or invalid values
+Handle null values - Use defaults for optional properties
+Keep buttons focused - One button type = one purpose
+Document your buttons - Explain required configuration options
+Test edge cases - Empty configs, missing properties, etc.
+Next Steps
+Create Custom Actions
+Work with Player Data
+Listen to Events
+
+Paginate Button
+Learn how to create buttons that display paginated lists of items using the PaginateButton class.
+
+Overview
+PaginateButton is an abstract class that simplifies the creation of buttons displaying paginated content. It automatically handles:
+
+Slot distribution across multiple slots
+Page calculation based on available slots
+Navigation between pages with PREVIOUS/NEXT buttons
+Basic Structure
+import fr.maxlego08.menu.api.button.PaginateButton;
+import fr.maxlego08.menu.api.engine.InventoryEngine;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+
+public class MyPaginatedButton extends PaginateButton {
+
+    private final MyPlugin plugin;
+
+    public MyPaginatedButton(Plugin plugin) {
+        this.plugin = (MyPlugin) plugin;
+    }
+
+    @Override
+    public void onRender(Player player, InventoryEngine inventoryEngine) {
+        // Get your list of items
+        List<MyItem> items = getItems(player);
+
+        // Use the paginate helper method
+        paginate(items, inventoryEngine, (slot, item) -> {
+            // Create the ItemStack for display
+            ItemStack itemStack = createDisplayItem(item);
+
+            // Add item to the inventory with click handler
+            inventoryEngine.addItem(slot, itemStack)
+                .setClick(event -> handleClick(player, item, event));
+        });
+    }
+
+    @Override
+    public int getPaginationSize(Player player) {
+        // Return the total number of items to paginate
+        return getItems(player).size();
+    }
+
+    private List<MyItem> getItems(Player player) {
+        return plugin.getItemManager().getItems(player);
+    }
+
+    private ItemStack createDisplayItem(MyItem item) {
+        // Create and return the display ItemStack
+        return item.toItemStack();
+    }
+
+    private void handleClick(Player player, MyItem item, InventoryClickEvent event) {
+        // Handle the click event
+        player.sendMessage("You clicked on: " + item.getName());
+    }
+}
+
+Key Methods
+onRender(Player, InventoryEngine)
+Called when the inventory is rendered. Use this to populate items.
+
+@Override
+public void onRender(Player player, InventoryEngine inventoryEngine) {
+    List<MyItem> items = getMyItems(player);
+
+    paginate(items, inventoryEngine, (slot, item) -> {
+        ItemStack display = item.toItemStack();
+        inventoryEngine.addItem(slot, display)
+            .setClick(event -> processClick(player, item, event));
+    });
+}
+
+getPaginationSize(Player)
+Returns the total number of items for pagination calculations.
+
+@Override
+public int getPaginationSize(Player player) {
+    return getMyItems(player).size();
+}
+
+paginate(List, InventoryEngine, BiConsumer)
+Helper method that distributes items across available slots for the current page.
+
+paginate(items, inventoryEngine, (slot, item) -> {
+    // slot: the inventory slot to use
+    // item: the current item from your list
+});
+
+getSlots()
+Returns the list of slots configured for this button (from YAML configuration).
+
+List<Integer> availableSlots = getSlots();
+
+Registering the Button
+Use NoneLoader to register a paginate button:
+
+@Override
+public void onEnable() {
+    MenuPlugin menuPlugin = (MenuPlugin) Bukkit.getPluginManager().getPlugin("zMenu");
+
+    if (menuPlugin != null) {
+        ButtonManager buttonManager = menuPlugin.getButtonManager();
+
+        // Register with NoneLoader for buttons with only a Plugin constructor
+        buttonManager.register(new NoneLoader(this, MyPaginatedButton.class, "MY_PAGINATED_BUTTON"));
+    }
+}
+
+YAML Configuration
+name: "&6My Paginated Menu (%page%/%max-page%)"
+size: 54
+
+items:
+  myItems:
+    type: MY_PAGINATED_BUTTON
+    slots:
+      - 10-16
+      - 19-25
+      - 28-34
+      - 37-43
+    # Optional: Display when no items
+    else:
+      slots:
+        - 22
+      item:
+        material: BARRIER
+        name: "&cNo items found"
+        lore:
+          - "&7There are no items to display."
+
+  # Navigation buttons
+  previous:
+    type: PREVIOUS
+    is-permanent: true
+    slot: 48
+    item:
+      material: ARROW
+      name: "&ePrevious Page"
+      lore:
+        - "&7Go to page %page-1%"
+
+  next:
+    type: NEXT
+    is-permanent: true
+    slot: 50
+    item:
+      material: ARROW
+      name: "&eNext Page"
+      lore:
+        - "&7Go to page %page+1%"
+
+Complete Example: Shop Items Button
+ShopItemsButton.java
+package com.example.shop.buttons;
+
+import fr.maxlego08.menu.api.button.PaginateButton;
+import fr.maxlego08.menu.api.engine.InventoryEngine;
+import fr.maxlego08.menu.api.utils.Placeholders;
+import com.example.shop.ShopPlugin;
+import com.example.shop.ShopItem;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+public class ShopItemsButton extends PaginateButton {
+
+    private final ShopPlugin plugin;
+
+    public ShopItemsButton(Plugin plugin) {
+        this.plugin = (ShopPlugin) plugin;
+    }
+
+    @Override
+    public void onRender(Player player, InventoryEngine inventoryEngine) {
+        List<ShopItem> items = plugin.getShopManager().getAvailableItems(player);
+
+        paginate(items, inventoryEngine, (slot, shopItem) -> {
+            ItemStack display = createShopDisplay(player, shopItem);
+            inventoryEngine.addItem(slot, display)
+                .setClick(createClickHandler(player, inventoryEngine, shopItem));
+        });
+    }
+
+    @Override
+    public int getPaginationSize(Player player) {
+        return plugin.getShopManager().getAvailableItems(player).size();
+    }
+
+    private ItemStack createShopDisplay(Player player, ShopItem shopItem) {
+        ItemStack item = shopItem.getItem().clone();
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            // Add price to lore
+            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+            lore.add("");
+            lore.add("§7Price: §e" + shopItem.getFormattedPrice());
+            lore.add("");
+            lore.add("§eLeft-click §7to buy x1");
+            lore.add("§eRight-click §7to buy x64");
+            lore.add("§eShift+click §7to sell");
+            meta.setLore(lore);
+            item.setItemMeta(meta);
+        }
+
+        return item;
+    }
+
+    private Consumer<InventoryClickEvent> createClickHandler(
+            Player player,
+            InventoryEngine inventoryEngine,
+            ShopItem shopItem) {
+
+        return event -> {
+            ClickType click = event.getClick();
+
+            if (click == ClickType.LEFT) {
+                // Buy 1
+                plugin.getShopManager().buyItem(player, shopItem, 1);
+            } else if (click == ClickType.RIGHT) {
+                // Buy 64
+                plugin.getShopManager().buyItem(player, shopItem, 64);
+            } else if (click.isShiftClick()) {
+                // Sell
+                plugin.getShopManager().sellItem(player, shopItem);
+            }
+
+            // Refresh inventory to update displays
+            inventoryEngine.updateInventory();
+        };
+    }
+}
+
+Complete Example: Player List Button
+OnlinePlayersButton.java
+package com.example.admin.buttons;
+
+import fr.maxlego08.menu.api.button.PaginateButton;
+import fr.maxlego08.menu.api.engine.InventoryEngine;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.plugin.Plugin;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
+public class OnlinePlayersButton extends PaginateButton {
+
+    private final Plugin plugin;
+
+    public OnlinePlayersButton(Plugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public void onRender(Player player, InventoryEngine inventoryEngine) {
+        List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+
+        // Remove the viewer from the list
+        onlinePlayers.remove(player);
+
+        paginate(onlinePlayers, inventoryEngine, (slot, targetPlayer) -> {
+            ItemStack head = createPlayerHead(targetPlayer);
+            inventoryEngine.addItem(slot, head)
+                .setClick(createClickHandler(player, targetPlayer));
+        });
+    }
+
+    @Override
+    public int getPaginationSize(Player player) {
+        // Subtract 1 because we remove the viewing player
+        return Math.max(0, Bukkit.getOnlinePlayers().size() - 1);
+    }
+
+    private ItemStack createPlayerHead(Player targetPlayer) {
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) head.getItemMeta();
+
+        if (meta != null) {
+            meta.setOwningPlayer(targetPlayer);
+            meta.setDisplayName("§e" + targetPlayer.getName());
+            meta.setLore(Arrays.asList(
+                "§7World: §f" + targetPlayer.getWorld().getName(),
+                "§7Health: §c" + (int) targetPlayer.getHealth() + "§7/§c20",
+                "",
+                "§aLeft-click §7to teleport",
+                "§cRight-click §7to kick"
+            ));
+            head.setItemMeta(meta);
+        }
+
+        return head;
+    }
+
+    private Consumer<InventoryClickEvent> createClickHandler(Player admin, Player target) {
+        return event -> {
+            if (event.isLeftClick()) {
+                admin.closeInventory();
+                admin.teleport(target.getLocation());
+                admin.sendMessage("§aTeleported to " + target.getName());
+            } else if (event.isRightClick()) {
+                if (admin.hasPermission("admin.kick")) {
+                    target.kickPlayer("Kicked by " + admin.getName());
+                    admin.sendMessage("§cKicked " + target.getName());
+                }
+            }
+        };
+    }
+}
+
+Advanced: Real-time Updates
+Update pagination items in real-time when data changes:
+
+public class LiveItemsButton extends PaginateButton {
+
+    private final MyPlugin plugin;
+
+    public LiveItemsButton(Plugin plugin) {
+        this.plugin = (MyPlugin) plugin;
+    }
+
+    @Override
+    public void onRender(Player player, InventoryEngine inventoryEngine) {
+        List<MyItem> items = plugin.getItemManager().getItems(player);
+
+        paginate(items, inventoryEngine, (slot, item) -> {
+            ItemStack display = item.toItemStack();
+            inventoryEngine.addItem(slot, display)
+                .setClick(createClick(player, inventoryEngine, slot, item, display));
+        });
+    }
+
+    @Override
+    public int getPaginationSize(Player player) {
+        return plugin.getItemManager().getItems(player).size();
+    }
+
+    private Consumer<InventoryClickEvent> createClick(
+            Player player,
+            InventoryEngine inventoryEngine,
+            int slot,
+            MyItem item,
+            ItemStack itemStack) {
+
+        return event -> {
+            // Process the click
+            boolean success = processItemClick(player, item, event);
+
+            if (success) {
+                // Update this specific slot
+                updateSlot(player, inventoryEngine, slot, item);
+            }
+        };
+    }
+
+    /**
+     * Update a specific slot in the inventory without full refresh
+     */
+    private void updateSlot(Player player, InventoryEngine inventoryEngine, int slot, MyItem item) {
+        ItemStack newDisplay = item.toItemStack();
+        inventoryEngine.getSpigotInventory().setItem(slot, newDisplay);
+    }
+
+    /**
+     * Called from external events to update all open inventories
+     */
+    public void updateAllInventories(MyItem changedItem, boolean wasAdded) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            var holder = onlinePlayer.getOpenInventory().getTopInventory().getHolder();
+
+            if (holder instanceof InventoryEngine inventoryEngine) {
+                var buttons = inventoryEngine.getMenuInventory()
+                    .getButtons(LiveItemsButton.class);
+
+                if (!buttons.isEmpty()) {
+                    // Trigger a refresh
+                    inventoryEngine.updateInventory();
+                }
+            }
+        }
+    }
+}
+
+Handling Empty States
+Display a fallback item when no items exist:
+
+items:
+  myItems:
+    type: MY_PAGINATED_BUTTON
+    slots:
+      - 10-16
+      - 19-25
+    else:
+      slots:
+        - 13  # Center slot
+      item:
+        material: STRUCTURE_VOID
+        name: "&c&lNo Items"
+        lore:
+          - "&7You don't have any items yet."
+          - ""
+          - "&eClick here to get started!"
+        actions:
+          - type: message
+            messages:
+              - "&aVisit the shop to purchase items!"
+
+Best Practices
+Return accurate size - getPaginationSize() must return the exact count
+Handle empty lists - Use the else configuration for empty states
+Use click consumers - Set click handlers via setClick() for proper event handling
+Cache expensive calculations - Don't recalculate lists in every render
+Update efficiently - Use updateInventory() instead of reopening
+Test pagination - Verify navigation works with various item counts
+Next Steps
+Learn about MenuItemStack for dynamic item creation
+Create Custom Actions for button clicks
+Work with Player Data for persistent storage
+
+MenuItemStack
+Learn how to use MenuItemStack to create dynamic, placeholder-aware items in zMenu.
+
+Overview
+MenuItemStack is an abstraction over Bukkit's ItemStack that provides:
+
+Placeholder support in names, lores, and other properties
+Dynamic item building based on player context
+Easy manipulation of item properties
+Support for custom model data, enchantments, and more
+Getting MenuItemStack
+From Button Configuration
+In custom buttons, retrieve the configured item:
+
+public class MyButton extends Button {
+
+    @Override
+    public ItemStack getCustomItemStack(Player player) {
+        // Get the MenuItemStack from YAML configuration
+        MenuItemStack menuItemStack = this.getItemStack();
+
+        // Build and return the ItemStack
+        return menuItemStack.build(player);
+    }
+}
+
+From InventoryManager
+Load a MenuItemStack from configuration:
+
+InventoryManager manager = menuPlugin.getInventoryManager();
+MenuItemStack itemStack = manager.loadItemStack(configuration, "path.to.item");
+
+Building ItemStacks
+Basic Build
+MenuItemStack menuItemStack = getItemStack();
+
+// Simple build with placeholder parsing
+ItemStack item = menuItemStack.build(player);
+
+Build with Cache Control
+// Build without caching (always fresh)
+ItemStack item = menuItemStack.build(player, false);
+
+// Build with caching (reuses cached result when possible)
+ItemStack itemCached = menuItemStack.build(player, true);
+
+Build with Custom Placeholders
+import fr.maxlego08.menu.api.utils.Placeholders;
+
+MenuItemStack menuItemStack = getItemStack();
+Placeholders placeholders = new Placeholders();
+
+// Register custom placeholders
+placeholders.register("price", "1000");
+placeholders.register("currency", "coins");
+placeholders.register("stock", "42");
+
+// Build with custom placeholders
+ItemStack item = menuItemStack.build(player, false, placeholders);
+
+Custom Placeholders
+Creating Placeholders
+Placeholders placeholders = new Placeholders();
+
+// String values
+placeholders.register("player_name", player.getName());
+placeholders.register("server_name", "MySever");
+
+// Numeric values (converted to string)
+placeholders.register("balance", String.valueOf(economy.getBalance(player)));
+placeholders.register("level", String.valueOf(player.getLevel()));
+
+// Boolean states
+placeholders.register("is_premium", player.hasPermission("premium") ? "Yes" : "No");
+
+// Formatted values
+placeholders.register("health", String.format("%.1f", player.getHealth()));
+
+Using in YAML
+item:
+  material: DIAMOND
+  name: "&6Purchase for %price% %currency%"
+  lore:
+    - "&7Stock remaining: &e%stock%"
+    - "&7Seller: &b%seller_name%"
+    - ""
+    - "&aClick to buy!"
+
+Complete Example: Dynamic Shop Item
+SellBuyButton.java
+package com.example.shop.buttons;
+
+import fr.maxlego08.menu.api.MenuItemStack;
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.engine.InventoryEngine;
+import fr.maxlego08.menu.api.utils.Placeholders;
+import com.example.shop.ShopPlugin;
+import com.example.shop.ShopItem;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+
+import java.math.BigDecimal;
+
+public class SellBuyButton extends Button {
+
+    private final ShopPlugin plugin;
+
+    public SellBuyButton(Plugin plugin) {
+        this.plugin = (ShopPlugin) plugin;
+    }
+
+    @Override
+    public ItemStack getCustomItemStack(Player player) {
+        // Get the MenuItemStack from configuration
+        MenuItemStack menuItemStack = this.getItemStack();
+
+        // Get data from player cache
+        var cache = plugin.getCacheManager().getCache(player);
+        ShopItem shopItem = cache.get("current_item");
+        BigDecimal price = cache.get("price", BigDecimal.ZERO);
+
+        // Create placeholders
+        Placeholders placeholders = new Placeholders();
+        placeholders.register("price", plugin.getEconomyManager().format(price));
+        placeholders.register("item_name", shopItem.getName());
+        placeholders.register("quantity", String.valueOf(shopItem.getQuantity()));
+
+        // Check affordability and add status
+        boolean canAfford = plugin.getEconomyManager().has(player, price);
+        placeholders.register("status", canAfford ? "&aYou can afford this!" : "&cNot enough money!");
+
+        // Build and return
+        return menuItemStack.build(player, false, placeholders);
+    }
+
+    @Override
+    public void onClick(Player player, InventoryClickEvent event,
+                       InventoryEngine inventory, int slot, Placeholders placeholders) {
+        super.onClick(player, event, inventory, slot, placeholders);
+
+        var cache = plugin.getCacheManager().getCache(player);
+        ShopItem shopItem = cache.get("current_item");
+        BigDecimal price = cache.get("price", BigDecimal.ZERO);
+
+        if (plugin.getEconomyManager().withdraw(player, price)) {
+            shopItem.give(player);
+            player.sendMessage("§aPurchase successful!");
+            player.closeInventory();
+        } else {
+            player.sendMessage("§cYou don't have enough money!");
+        }
+    }
+}
+
+YAML Configuration
+items:
+  buy-button:
+    type: MY_SELL_BUY
+    slot: 22
+    item:
+      material: EMERALD
+      name: "&a&lConfirm Purchase"
+      lore:
+        - "&7Item: &f%item_name%"
+        - "&7Quantity: &e%quantity%"
+        - "&7Price: &6%price%"
+        - ""
+        - "%status%"
+        - ""
+        - "&eClick to purchase!"
+
+Complete Example: Sort Button with States
+SortButton.java
+package com.example.sort.buttons;
+
+import fr.maxlego08.menu.api.MenuItemStack;
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.engine.InventoryEngine;
+import fr.maxlego08.menu.api.utils.Placeholders;
+import com.example.sort.SortPlugin;
+import com.example.sort.SortType;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+
+import java.util.List;
+
+public class SortButton extends Button {
+
+    private final SortPlugin plugin;
+    private final String enableText;
+    private final String disableText;
+    private final MenuItemStack loadingItemStack;
+    private final List<SortType> sortTypes;
+
+    public SortButton(Plugin plugin, String enableText, String disableText,
+                     MenuItemStack loadingItemStack, List<SortType> sortTypes) {
+        this.plugin = (SortPlugin) plugin;
+        this.enableText = enableText;
+        this.disableText = disableText;
+        this.loadingItemStack = loadingItemStack;
+        this.sortTypes = sortTypes;
+    }
+
+    @Override
+    public boolean isPermanent() {
+        return true;
+    }
+
+    @Override
+    public ItemStack getCustomItemStack(Player player) {
+        var cache = plugin.getCacheManager().getCache(player);
+        SortType currentSort = cache.get("current_sort", SortType.DATE_DESC);
+
+        MenuItemStack itemStack = this.getItemStack();
+        Placeholders placeholders = new Placeholders();
+
+        // Register state for each sort type
+        for (SortType sortType : sortTypes) {
+            String state = (sortType == currentSort) ? enableText : disableText;
+            String displayName = state.replace("%sorting%", sortType.getDisplayName());
+            placeholders.register(sortType.name(), displayName);
+        }
+
+        return itemStack.build(player, false, placeholders);
+    }
+
+    @Override
+    public void onClick(Player player, InventoryClickEvent event,
+                       InventoryEngine inventory, int slot, Placeholders placeholders) {
+        super.onClick(player, event, inventory, slot, placeholders);
+
+        var cache = plugin.getCacheManager().getCache(player);
+        SortType currentSort = cache.get("current_sort", SortType.DATE_DESC);
+
+        // Show loading state
+        for (Integer buttonSlot : getSlots()) {
+            inventory.getSpigotInventory().setItem(buttonSlot, loadingItemStack.build(player));
+        }
+
+        // Calculate next sort type
+        int currentIndex = sortTypes.indexOf(currentSort);
+        int direction = event.isRightClick() ? -1 : 1;
+        int nextIndex = (currentIndex + direction + sortTypes.size()) % sortTypes.size();
+        SortType nextSort = sortTypes.get(nextIndex);
+
+        // Update cache and refresh
+        cache.set("current_sort", nextSort);
+
+        plugin.getScheduler().runAsync(task -> {
+            // Perform async sorting
+            plugin.getSortManager().sortItems(player, nextSort);
+
+            // Update inventory on main thread
+            plugin.getScheduler().runNextTick(w -> {
+                inventory.updateInventory();
+            });
+        });
+    }
+}
+
+YAML Configuration
+items:
+  sort-button:
+    type: MY_SORT_BUTTON
+    slot: 49
+    is-permanent: true
+    item:
+      material: HOPPER
+      name: "&e&lSort Items"
+      lore:
+        - "&7Current sorting options:"
+        - ""
+        - " %DATE_DESC%"
+        - " %DATE_ASC%"
+        - " %PRICE_DESC%"
+        - " %PRICE_ASC%"
+        - " %NAME_ASC%"
+        - ""
+        - "&eLeft-click &7for next"
+        - "&eRight-click &7for previous"
+
+Complete Example: Toggle Button
+ToggleButton.java
+package com.example.settings.buttons;
+
+import fr.maxlego08.menu.api.MenuItemStack;
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.engine.InventoryEngine;
+import fr.maxlego08.menu.api.utils.Placeholders;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+
+public class ToggleButton extends Button {
+
+    private final Plugin plugin;
+    private final String settingKey;
+    private final MenuItemStack enabledItem;
+    private final MenuItemStack disabledItem;
+
+    public ToggleButton(Plugin plugin, String settingKey,
+                       MenuItemStack enabledItem, MenuItemStack disabledItem) {
+        this.plugin = plugin;
+        this.settingKey = settingKey;
+        this.enabledItem = enabledItem;
+        this.disabledItem = disabledItem;
+    }
+
+    @Override
+    public ItemStack getCustomItemStack(Player player) {
+        boolean isEnabled = getSettingValue(player);
+
+        // Use different MenuItemStack based on state
+        MenuItemStack itemStack = isEnabled ? enabledItem : disabledItem;
+
+        Placeholders placeholders = new Placeholders();
+        placeholders.register("status", isEnabled ? "&aEnabled" : "&cDisabled");
+        placeholders.register("action", isEnabled ? "disable" : "enable");
+
+        return itemStack.build(player, false, placeholders);
+    }
+
+    @Override
+    public void onClick(Player player, InventoryClickEvent event,
+                       InventoryEngine inventory, int slot, Placeholders placeholders) {
+        super.onClick(player, event, inventory, slot, placeholders);
+
+        // Toggle the setting
+        boolean currentValue = getSettingValue(player);
+        setSettingValue(player, !currentValue);
+
+        // Refresh inventory
+        inventory.updateInventory();
+
+        // Notify player
+        String newStatus = !currentValue ? "enabled" : "disabled";
+        player.sendMessage("§aSetting " + settingKey + " " + newStatus + "!");
+    }
+
+    private boolean getSettingValue(Player player) {
+        // Implementation depends on your storage system
+        return plugin.getConfig().getBoolean("players." + player.getUniqueId() + "." + settingKey, false);
+    }
+
+    private void setSettingValue(Player player, boolean value) {
+        plugin.getConfig().set("players." + player.getUniqueId() + "." + settingKey, value);
+        plugin.saveConfig();
+    }
+}
+
+Loading MenuItemStack from Configuration
+Custom ButtonLoader
+package com.example.loader;
+
+import fr.maxlego08.menu.api.MenuItemStack;
+import fr.maxlego08.menu.api.InventoryManager;
+import fr.maxlego08.menu.api.button.Button;
+import fr.maxlego08.menu.api.loader.ButtonLoader;
+import com.example.buttons.ToggleButton;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+
+public class ToggleButtonLoader implements ButtonLoader {
+
+    private final Plugin plugin;
+    private final InventoryManager inventoryManager;
+
+    public ToggleButtonLoader(Plugin plugin, InventoryManager inventoryManager) {
+        this.plugin = plugin;
+        this.inventoryManager = inventoryManager;
+    }
+
+    @Override
+    public String getName() {
+        return "MY_TOGGLE";
+    }
+
+    @Override
+    public Button load(YamlConfiguration config, String path, Plugin plugin) {
+        // Load basic properties
+        String settingKey = config.getString(path + ".setting-key", "default");
+
+        // Load MenuItemStack for enabled state
+        MenuItemStack enabledItem = inventoryManager.loadItemStack(config, path + ".enabled-item");
+
+        // Load MenuItemStack for disabled state
+        MenuItemStack disabledItem = inventoryManager.loadItemStack(config, path + ".disabled-item");
+
+        return new ToggleButton(this.plugin, settingKey, enabledItem, disabledItem);
+    }
+}
+
+YAML Configuration
+items:
+  notifications-toggle:
+    type: MY_TOGGLE
+    slot: 11
+    setting-key: "notifications"
+    enabled-item:
+      material: LIME_DYE
+      name: "&a&lNotifications: %status%"
+      lore:
+        - "&7You will receive notifications"
+        - ""
+        - "&eClick to %action%"
+    disabled-item:
+      material: GRAY_DYE
+      name: "&c&lNotifications: %status%"
+      lore:
+        - "&7Notifications are turned off"
+        - ""
+        - "&eClick to %action%"
+
+MenuItemStack Properties
+Properties available in YAML configuration:
+
+item:
+  # Material
+  material: DIAMOND_SWORD
+
+  # Display name
+  name: "&6&lLegendary Sword"
+
+  # Lore lines
+  lore:
+    - "&7A powerful weapon"
+    - "&7Damage: &c+50"
+
+  # Amount
+  amount: 1
+
+  # Custom model data (1.14+)
+  modelId: 12345
+
+  # Durability/damage
+  durability: 0
+
+  # Enchantments
+  enchants:
+    - SHARPNESS,5
+    - UNBREAKING,3
+
+  # Item flags
+  flags:
+    - HIDE_ENCHANTS
+    - HIDE_ATTRIBUTES
+
+  # Glow effect (without enchant text)
+  glow: true
+
+  # Player head
+  playerHead: "%player%"
+  # Or custom URL
+  url: "eyJ0ZXh0dXJlcyI6..."
+
+  # Potion
+  potion: SPEED
+  potionExtended: true
+  potionUpgraded: false
+
+  # Leather armor color
+  color: "#FF5555"
+
+  # Banner patterns
+  banner:
+    - RED,STRIPE_TOP
+    - BLUE,CROSS
+
+Best Practices
+Use placeholders - Leverage the placeholder system for dynamic content
+Cache when possible - Use build(player, true) for static items
+Create reusable placeholders - Build a helper class for common placeholders
+Handle null values - Always provide defaults for placeholder values
+Keep lore concise - Long lores can cause display issues
+Test with PlaceholderAPI - Ensure PAPI placeholders work correctly
+Next Steps
+Create Custom Buttons using MenuItemStack
+Create Paginated Buttons with dynamic items
+Work with Player Data for persistent values
+
+Custom Actions
+Learn how to create and register custom action types in zMenu.
+
+Overview
+Actions are executed when players interact with buttons. Custom actions allow you to add new behaviors beyond the built-in action types.
+
+Creating an Action Loader
+The ActionLoader interface defines how your action is parsed from YAML:
+
+import fr.maxlego08.menu.api.action.Action;
+import fr.maxlego08.menu.api.loader.ActionLoader;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+public class MyActionLoader implements ActionLoader {
+
+    @Override
+    public String getKey() {
+        return "my-custom-action"; // The type name used in YAML
+    }
+
+    @Override
+    public Action load(YamlConfiguration configuration, String path) {
+        // Read custom properties from configuration
+        String message = configuration.getString(path + ".message", "Default message");
+        int times = configuration.getInt(path + ".times", 1);
+
+        return new MyCustomAction(message, times);
+    }
+}
+
+Creating an Action Implementation
+import fr.maxlego08.menu.api.action.Action;
+import org.bukkit.entity.Player;
+
+public class MyCustomAction implements Action {
+
+    private final String message;
+    private final int times;
+
+    public MyCustomAction(String message, int times) {
+        this.message = message;
+        this.times = times;
+    }
+
+    @Override
+    public void execute(Player player) {
+        for (int i = 0; i < times; i++) {
+            player.sendMessage(message);
+        }
+    }
+}
+
+Registering Your Action
+Register your action loader when your plugin enables:
+
+@Override
+public void onEnable() {
+    MenuPlugin menuPlugin = (MenuPlugin) Bukkit.getPluginManager().getPlugin("zMenu");
+
+    if (menuPlugin != null) {
+        // Register using the button manager's action loader registry
+        menuPlugin.getButtonManager().registerAction(new MyActionLoader());
+        getLogger().info("Registered custom action: my-custom-action");
+    }
+}
+
+Using Your Custom Action
+In your inventory YAML configuration:
+
+items:
+  my-button:
+    slot: 13
+    item:
+      material: DIAMOND
+      name: "&bClick me"
+    actions:
+      - type: my-custom-action
+        message: "&aHello, %player%!"
+        times: 3
+
+Complete Example: Particle Action
+ParticleActionLoader.java
+package com.example.actions;
+
+import fr.maxlego08.menu.api.action.Action;
+import fr.maxlego08.menu.api.loader.ActionLoader;
+import org.bukkit.Particle;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+public class ParticleActionLoader implements ActionLoader {
+
+    @Override
+    public String getKey() {
+        return "particle";
+    }
+
+    @Override
+    public Action load(YamlConfiguration config, String path) {
+        String particleName = config.getString(path + ".particle", "HEART");
+        int count = config.getInt(path + ".count", 10);
+        double offsetX = config.getDouble(path + ".offset-x", 0.5);
+        double offsetY = config.getDouble(path + ".offset-y", 0.5);
+        double offsetZ = config.getDouble(path + ".offset-z", 0.5);
+        double speed = config.getDouble(path + ".speed", 0.1);
+
+        Particle particle;
+        try {
+            particle = Particle.valueOf(particleName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            particle = Particle.HEART;
+        }
+
+        return new ParticleAction(particle, count, offsetX, offsetY, offsetZ, speed);
+    }
+}
+
+ParticleAction.java
+package com.example.actions;
+
+import fr.maxlego08.menu.api.action.Action;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.entity.Player;
+
+public class ParticleAction implements Action {
+
+    private final Particle particle;
+    private final int count;
+    private final double offsetX;
+    private final double offsetY;
+    private final double offsetZ;
+    private final double speed;
+
+    public ParticleAction(Particle particle, int count,
+                         double offsetX, double offsetY, double offsetZ,
+                         double speed) {
+        this.particle = particle;
+        this.count = count;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.offsetZ = offsetZ;
+        this.speed = speed;
+    }
+
+    @Override
+    public void execute(Player player) {
+        Location location = player.getLocation().add(0, 1, 0);
+        player.getWorld().spawnParticle(
+            particle,
+            location,
+            count,
+            offsetX, offsetY, offsetZ,
+            speed
+        );
+    }
+}
+
+Usage in YAML
+items:
+  reward-button:
+    slot: 13
+    item:
+      material: NETHER_STAR
+      name: "&6&lClaim Reward"
+    actions:
+      - type: particle
+        particle: VILLAGER_HAPPY
+        count: 30
+        offset-x: 1.0
+        offset-y: 1.0
+        offset-z: 1.0
+        speed: 0.2
+      - type: message
+        messages:
+          - "&aReward claimed!"
+
+Complete Example: Economy Action
+EconomyActionLoader.java
+package com.example.actions;
+
+import fr.maxlego08.menu.api.action.Action;
+import fr.maxlego08.menu.api.loader.ActionLoader;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+public class EconomyActionLoader implements ActionLoader {
+
+    @Override
+    public String getKey() {
+        return "custom-economy";
+    }
+
+    @Override
+    public Action load(YamlConfiguration config, String path) {
+        String operation = config.getString(path + ".operation", "give");
+        double amount = config.getDouble(path + ".amount", 0);
+        String successMessage = config.getString(path + ".success-message", "&aDone!");
+        String failMessage = config.getString(path + ".fail-message", "&cFailed!");
+
+        return new EconomyAction(operation, amount, successMessage, failMessage);
+    }
+}
+
+EconomyAction.java
+package com.example.actions;
+
+import fr.maxlego08.menu.api.action.Action;
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.RegisteredServiceProvider;
+
+public class EconomyAction implements Action {
+
+    private final String operation;
+    private final double amount;
+    private final String successMessage;
+    private final String failMessage;
+
+    public EconomyAction(String operation, double amount,
+                        String successMessage, String failMessage) {
+        this.operation = operation;
+        this.amount = amount;
+        this.successMessage = successMessage;
+        this.failMessage = failMessage;
+    }
+
+    @Override
+    public void execute(Player player) {
+        Economy economy = getEconomy();
+        if (economy == null) {
+            player.sendMessage(ChatColor.RED + "Economy not available!");
+            return;
+        }
+
+        EconomyResponse response;
+        boolean success;
+
+        switch (operation.toLowerCase()) {
+            case "give":
+            case "deposit":
+                response = economy.depositPlayer(player, amount);
+                success = response.transactionSuccess();
+                break;
+            case "take":
+            case "withdraw":
+                if (economy.has(player, amount)) {
+                    response = economy.withdrawPlayer(player, amount);
+                    success = response.transactionSuccess();
+                } else {
+                    success = false;
+                }
+                break;
+            default:
+                success = false;
+        }
+
+        String message = success ? successMessage : failMessage;
+        message = message.replace("%amount%", String.valueOf(amount));
+        message = message.replace("%balance%", String.valueOf(economy.getBalance(player)));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+    }
+
+    private Economy getEconomy() {
+        if (Bukkit.getPluginManager().getPlugin("Vault") == null) {
+            return null;
+        }
+        RegisteredServiceProvider<Economy> rsp =
+            Bukkit.getServicesManager().getRegistration(Economy.class);
+        return rsp != null ? rsp.getProvider() : null;
+    }
+}
+
+Usage in YAML
+items:
+  daily-reward:
+    slot: 13
+    item:
+      material: GOLD_INGOT
+      name: "&6&lDaily Reward"
+      lore:
+        - "&7Claim $100 daily!"
+    actions:
+      - type: custom-economy
+        operation: give
+        amount: 100
+        success-message: "&aYou received $%amount%! Balance: $%balance%"
+        fail-message: "&cSomething went wrong!"
+
+Complete Example: Permission Check Action
+CheckPermissionActionLoader.java
+package com.example.actions;
+
+import fr.maxlego08.menu.api.action.Action;
+import fr.maxlego08.menu.api.loader.ActionLoader;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.util.List;
+
+public class CheckPermissionActionLoader implements ActionLoader {
+
+    @Override
+    public String getKey() {
+        return "check-permission";
+    }
+
+    @Override
+    public Action load(YamlConfiguration config, String path) {
+        String permission = config.getString(path + ".permission", "");
+        List<String> successCommands = config.getStringList(path + ".success-commands");
+        List<String> failCommands = config.getStringList(path + ".fail-commands");
+
+        return new CheckPermissionAction(permission, successCommands, failCommands);
+    }
+}
+
+CheckPermissionAction.java
+package com.example.actions;
+
+import fr.maxlego08.menu.api.action.Action;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import java.util.List;
+
+public class CheckPermissionAction implements Action {
+
+    private final String permission;
+    private final List<String> successCommands;
+    private final List<String> failCommands;
+
+    public CheckPermissionAction(String permission,
+                                List<String> successCommands,
+                                List<String> failCommands) {
+        this.permission = permission;
+        this.successCommands = successCommands;
+        this.failCommands = failCommands;
+    }
+
+    @Override
+    public void execute(Player player) {
+        List<String> commands = player.hasPermission(permission)
+            ? successCommands
+            : failCommands;
+
+        for (String command : commands) {
+            String parsedCommand = command.replace("%player%", player.getName());
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsedCommand);
+        }
+    }
+}
+
+Usage in YAML
+items:
+  vip-reward:
+    slot: 13
+    item:
+      material: DIAMOND
+      name: "&b&lVIP Reward"
+    actions:
+      - type: check-permission
+        permission: "server.vip"
+        success-commands:
+          - "give %player% diamond 5"
+          - "msg %player% &aHere are your VIP diamonds!"
+        fail-commands:
+          - "msg %player% &cYou need VIP to claim this!"
+
+Action with Placeholder Support
+To support placeholders in your action:
+
+import fr.maxlego08.menu.api.utils.Placeholders;
+
+@Override
+public void execute(Player player) {
+    // Parse placeholders before using the message
+    String parsedMessage = Placeholders.parse(player, this.message);
+    player.sendMessage(ChatColor.translateAlternateColorCodes('&', parsedMessage));
+}
+
+Best Practices
+Use clear action names - Descriptive and unique identifiers
+Validate input - Handle missing or invalid configuration
+Provide defaults - Use sensible default values
+Support placeholders - Parse placeholders where appropriate
+Handle errors gracefully - Don't crash on invalid input
+Document configuration - Explain all options in your docs
+Next Steps
+Work with Player Data
+Listen to Events
+Review the API Introduction
+
+Player Data API
+Learn how to work with zMenu's player data storage system programmatically.
+
+Overview
+zMenu provides a built-in data storage system that persists player-specific values. This data is:
+
+Stored in a database (SQLite, MySQL, or MariaDB)
+Accessible via placeholders (%zmenu_player_value_<key>%)
+Persistent across server restarts
+Available through the API
+DataManager
+Get the data manager to work with player data:
+
+DataManager dataManager = menuPlugin.getDataManager();
+
+Reading Data
+Get a Single Value
+// Returns Optional<String>
+Optional<String> value = dataManager.getData(player, "coins");
+
+// Check and use the value
+if (value.isPresent()) {
+    int coins = Integer.parseInt(value.get());
+    player.sendMessage("You have " + coins + " coins");
+} else {
+    player.sendMessage("No coins data found");
+}
+
+Get with Default Value
+String coins = dataManager.getData(player, "coins").orElse("0");
+int coinAmount = Integer.parseInt(coins);
+
+Get by UUID
+UUID uuid = player.getUniqueId();
+Optional<String> value = dataManager.getData(uuid, "coins");
+
+Check If Data Exists
+boolean hasCoins = dataManager.getData(player, "coins").isPresent();
+
+Writing Data
+Set a Value
+// Set a string value
+dataManager.setData(player, "coins", "100");
+
+// Set a numeric value (as string)
+dataManager.setData(player, "level", String.valueOf(5));
+
+// Set a boolean (as string)
+dataManager.setData(player, "premium", "true");
+
+Add to a Numeric Value
+// Add 50 to the current value
+dataManager.addData(player, "coins", 50);
+
+Subtract from a Value
+// Subtract by adding a negative value
+dataManager.addData(player, "coins", -25);
+
+Remove Data
+// Remove a specific key for a player
+dataManager.removeData(player, "coins");
+
+Bulk Operations
+Get All Keys for a Player
+// This functionality depends on implementation
+// Generally, you would track your own keys
+List<String> knownKeys = Arrays.asList("coins", "level", "premium", "last-login");
+
+for (String key : knownKeys) {
+    dataManager.getData(player, key).ifPresent(value -> {
+        player.sendMessage(key + ": " + value);
+    });
+}
+
+Complete Example: Currency System
+package com.example.currency;
+
+import fr.maxlego08.menu.api.MenuPlugin;
+import fr.maxlego08.menu.api.DataManager;
+import org.bukkit.entity.Player;
+
+public class CurrencyManager {
+
+    private final DataManager dataManager;
+    private static final String COINS_KEY = "coins";
+
+    public CurrencyManager(MenuPlugin menuPlugin) {
+        this.dataManager = menuPlugin.getDataManager();
+    }
+
+    public int getCoins(Player player) {
+        return dataManager.getData(player, COINS_KEY)
+            .map(Integer::parseInt)
+            .orElse(0);
+    }
+
+    public void setCoins(Player player, int amount) {
+        dataManager.setData(player, COINS_KEY, String.valueOf(Math.max(0, amount)));
+    }
+
+    public void addCoins(Player player, int amount) {
+        int current = getCoins(player);
+        setCoins(player, current + amount);
+    }
+
+    public boolean removeCoins(Player player, int amount) {
+        int current = getCoins(player);
+        if (current >= amount) {
+            setCoins(player, current - amount);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasCoins(Player player, int amount) {
+        return getCoins(player) >= amount;
+    }
+}
+
+Usage
+CurrencyManager currency = new CurrencyManager(menuPlugin);
+
+// Check balance
+int balance = currency.getCoins(player);
+player.sendMessage("Balance: " + balance);
+
+// Add coins
+currency.addCoins(player, 100);
+player.sendMessage("Added 100 coins!");
+
+// Remove coins (with check)
+if (currency.removeCoins(player, 50)) {
+    player.sendMessage("Spent 50 coins");
+} else {
+    player.sendMessage("Not enough coins!");
+}
+
+Complete Example: Statistics Tracker
+package com.example.stats;
+
+import fr.maxlego08.menu.api.MenuPlugin;
+import fr.maxlego08.menu.api.DataManager;
+import org.bukkit.entity.Player;
+
+public class StatsTracker {
+
+    private final DataManager dataManager;
+
+    public StatsTracker(MenuPlugin menuPlugin) {
+        this.dataManager = menuPlugin.getDataManager();
+    }
+
+    // Kills
+    public int getKills(Player player) {
+        return getIntValue(player, "kills");
+    }
+
+    public void incrementKills(Player player) {
+        dataManager.addData(player, "kills", 1);
+    }
+
+    // Deaths
+    public int getDeaths(Player player) {
+        return getIntValue(player, "deaths");
+    }
+
+    public void incrementDeaths(Player player) {
+        dataManager.addData(player, "deaths", 1);
+    }
+
+    // K/D Ratio
+    public double getKDRatio(Player player) {
+        int kills = getKills(player);
+        int deaths = getDeaths(player);
+        if (deaths == 0) return kills;
+        return (double) kills / deaths;
+    }
+
+    // Playtime (in minutes)
+    public long getPlaytime(Player player) {
+        return getLongValue(player, "playtime");
+    }
+
+    public void addPlaytime(Player player, long minutes) {
+        long current = getPlaytime(player);
+        dataManager.setData(player, "playtime", String.valueOf(current + minutes));
+    }
+
+    // Helper methods
+    private int getIntValue(Player player, String key) {
+        return dataManager.getData(player, key)
+            .map(Integer::parseInt)
+            .orElse(0);
+    }
+
+    private long getLongValue(Player player, String key) {
+        return dataManager.getData(player, key)
+            .map(Long::parseLong)
+            .orElse(0L);
+    }
+}
+
+Complete Example: Daily Rewards System
+package com.example.rewards;
+
+import fr.maxlego08.menu.api.MenuPlugin;
+import fr.maxlego08.menu.api.DataManager;
+import org.bukkit.entity.Player;
+
+public class DailyRewardsManager {
+
+    private final DataManager dataManager;
+    private static final long DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
+
+    public DailyRewardsManager(MenuPlugin menuPlugin) {
+        this.dataManager = menuPlugin.getDataManager();
+    }
+
+    public boolean canClaimDaily(Player player) {
+        long lastClaim = getLastClaimTime(player);
+        long now = System.currentTimeMillis();
+        return (now - lastClaim) >= DAY_IN_MILLIS;
+    }
+
+    public long getTimeUntilNextClaim(Player player) {
+        long lastClaim = getLastClaimTime(player);
+        long now = System.currentTimeMillis();
+        long nextClaim = lastClaim + DAY_IN_MILLIS;
+        return Math.max(0, nextClaim - now);
+    }
+
+    public void claimDaily(Player player) {
+        dataManager.setData(player, "daily-last-claim",
+            String.valueOf(System.currentTimeMillis()));
+        incrementStreak(player);
+    }
+
+    public int getStreak(Player player) {
+        return dataManager.getData(player, "daily-streak")
+            .map(Integer::parseInt)
+            .orElse(0);
+    }
+
+    private void incrementStreak(Player player) {
+        dataManager.addData(player, "daily-streak", 1);
+    }
+
+    public void resetStreak(Player player) {
+        dataManager.setData(player, "daily-streak", "0");
+    }
+
+    private long getLastClaimTime(Player player) {
+        return dataManager.getData(player, "daily-last-claim")
+            .map(Long::parseLong)
+            .orElse(0L);
+    }
+
+    // Format time remaining
+    public String formatTimeRemaining(Player player) {
+        long millis = getTimeUntilNextClaim(player);
+        long hours = millis / (60 * 60 * 1000);
+        long minutes = (millis % (60 * 60 * 1000)) / (60 * 1000);
+        return String.format("%dh %dm", hours, minutes);
+    }
+}
+
+Working with Complex Data
+For complex data structures, serialize to JSON:
+
+import com.google.gson.Gson;
+
+public class ComplexDataManager {
+
+    private final DataManager dataManager;
+    private final Gson gson = new Gson();
+
+    public ComplexDataManager(MenuPlugin menuPlugin) {
+        this.dataManager = menuPlugin.getDataManager();
+    }
+
+    // Save a list
+    public void saveStringList(Player player, String key, List<String> list) {
+        String json = gson.toJson(list);
+        dataManager.setData(player, key, json);
+    }
+
+    // Load a list
+    public List<String> loadStringList(Player player, String key) {
+        return dataManager.getData(player, key)
+            .map(json -> gson.fromJson(json,
+                new TypeToken<List<String>>(){}.getType()))
+            .orElse(new ArrayList<>());
+    }
+
+    // Save custom object
+    public void savePlayerStats(Player player, PlayerStats stats) {
+        String json = gson.toJson(stats);
+        dataManager.setData(player, "player-stats", json);
+    }
+
+    // Load custom object
+    public PlayerStats loadPlayerStats(Player player) {
+        return dataManager.getData(player, "player-stats")
+            .map(json -> gson.fromJson(json, PlayerStats.class))
+            .orElse(new PlayerStats());
+    }
+}
+
+// Example data class
+public class PlayerStats {
+    public int kills = 0;
+    public int deaths = 0;
+    public long playtime = 0;
+    public List<String> achievements = new ArrayList<>();
+}
+
+Using Data in Inventories
+The data you set is automatically available as placeholders:
+
+items:
+  stats-display:
+    slot: 4
+    item:
+      material: PLAYER_HEAD
+      playerHead: "%player%"
+      name: "&6&l%player%'s Stats"
+      lore:
+        - "&7Coins: &e%zmenu_player_value_coins%"
+        - "&7Kills: &a%zmenu_player_value_kills%"
+        - "&7Deaths: &c%zmenu_player_value_deaths%"
+        - "&7Streak: &b%zmenu_player_value_daily-streak%"
+
+Best Practices
+Use consistent key names - Establish a naming convention
+Handle missing data - Always use orElse() for defaults
+Validate numeric parsing - Wrap in try-catch for safety
+Don't overwrite important data - Check before setting
+Use appropriate data types - Store as strings, parse when needed
+Clean up unused data - Remove keys no longer needed
+Key Naming Conventions
+// Good naming conventions
+"coins"              // Simple, clear
+"daily-streak"       // Kebab-case for multi-word
+"quest-tutorial-1"   // Include identifiers
+"stats-kills"        // Prefix with category
+
+// Avoid
+"c"                  // Too short
+"playerCoinsData"    // CamelCase (use kebab)
+"x1y2z3"            // Meaningless
+
+Next Steps
+Listen to Events
+Create Custom Buttons that use player data
+Create Custom Actions that modify player data
+
+Events
+zMenu fires various events that you can listen to in your plugin. This allows you to react to inventory actions, button loads, and more.
+
+Available Events
+Event	Description
+ButtonLoadEvent	Fired when a button is loaded from configuration
+InventoryLoadEvent	Fired when an inventory is loaded
+PlayerOpenInventoryEvent	Fired when a player opens a zMenu inventory
+ButtonLoaderRegisterEvent	Fired when a button loader is registered
+ZMenuItemsLoad	Fired when custom items are loaded
+ButtonLoadEvent
+Fired when a button is loaded from a configuration file.
+
+import fr.maxlego08.menu.api.event.ButtonLoadEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+
+public class ButtonListener implements Listener {
+
+    @EventHandler
+    public void onButtonLoad(ButtonLoadEvent event) {
+        Button button = event.getButton();
+        String buttonName = button.getName();
+
+        getLogger().info("Button loaded: " + buttonName);
+
+        // You can modify the button or add custom logic
+    }
+}
+
+Use Cases
+Log all loaded buttons
+Validate button configurations
+Add custom processing to buttons
+InventoryLoadEvent
+Fired when an inventory is loaded from a configuration file.
+
+import fr.maxlego08.menu.api.event.InventoryLoadEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+
+public class InventoryListener implements Listener {
+
+    @EventHandler
+    public void onInventoryLoad(InventoryLoadEvent event) {
+        Inventory inventory = event.getInventory();
+        String name = inventory.getName();
+        String fileName = inventory.getFileName();
+        int size = inventory.size();
+
+        getLogger().info("Inventory loaded: " + fileName);
+        getLogger().info("  Name: " + name);
+        getLogger().info("  Size: " + size);
+        getLogger().info("  Buttons: " + inventory.getButtons().size());
+    }
+}
+
+Use Cases
+Track loaded inventories
+Validate inventory configurations
+Add post-processing to inventories
+PlayerOpenInventoryEvent
+Fired when a player opens a zMenu inventory. This event is cancellable.
+
+import fr.maxlego08.menu.api.event.PlayerOpenInventoryEvent;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+
+public class OpenInventoryListener implements Listener {
+
+    @EventHandler
+    public void onPlayerOpenInventory(PlayerOpenInventoryEvent event) {
+        Player player = event.getPlayer();
+        Inventory inventory = event.getInventory();
+
+        getLogger().info(player.getName() + " opened inventory: " + inventory.getFileName());
+
+        // Cancel opening for specific conditions
+        if (!player.hasPermission("myplugin.use.menus")) {
+            event.setCancelled(true);
+            player.sendMessage("You don't have permission to use menus!");
+        }
+    }
+}
+
+Use Cases
+Log player menu access
+Restrict inventory access
+Track player activity
+Add custom checks before opening
+Cancel the Event
+@EventHandler
+public void onPlayerOpenInventory(PlayerOpenInventoryEvent event) {
+    Player player = event.getPlayer();
+    Inventory inventory = event.getInventory();
+
+    // Block specific inventories for non-VIP
+    if (inventory.getFileName().startsWith("vip-") &&
+        !player.hasPermission("server.vip")) {
+        event.setCancelled(true);
+        player.sendMessage(ChatColor.RED + "This menu is VIP-only!");
+    }
+}
+
+ButtonLoaderRegisterEvent
+Fired when a button loader is registered with the ButtonManager.
+
+import fr.maxlego08.menu.api.event.ButtonLoaderRegisterEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+
+public class LoaderListener implements Listener {
+
+    @EventHandler
+    public void onButtonLoaderRegister(ButtonLoaderRegisterEvent event) {
+        ButtonLoader loader = event.getButtonLoader();
+        String name = loader.getName();
+
+        getLogger().info("Button loader registered: " + name);
+    }
+}
+
+Use Cases
+Track available button types
+Log plugin integrations
+Debug loader registration
+ZMenuItemsLoad
+Fired when zMenu loads custom items from configuration.
+
+import fr.maxlego08.menu.api.event.ZMenuItemsLoad;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+
+public class ItemsLoadListener implements Listener {
+
+    @EventHandler
+    public void onItemsLoad(ZMenuItemsLoad event) {
+        getLogger().info("zMenu items have been loaded!");
+
+        // Add your custom items or processing here
+    }
+}
+
+Registering Event Listeners
+Register your listeners in your plugin's onEnable:
+
+@Override
+public void onEnable() {
+    // Register event listeners
+    getServer().getPluginManager().registerEvents(new ButtonListener(), this);
+    getServer().getPluginManager().registerEvents(new InventoryListener(), this);
+    getServer().getPluginManager().registerEvents(new OpenInventoryListener(), this);
+}
+
+Complete Example: Menu Analytics
+Track menu usage for analytics:
+
+package com.example.analytics;
+
+import fr.maxlego08.menu.api.Inventory;
+import fr.maxlego08.menu.api.event.PlayerOpenInventoryEvent;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class MenuAnalytics implements Listener {
+
+    private final JavaPlugin plugin;
+    private final Map<String, Integer> menuOpenCounts = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastMenuOpen = new ConcurrentHashMap<>();
+
+    public MenuAnalytics(JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler
+    public void onMenuOpen(PlayerOpenInventoryEvent event) {
+        Player player = event.getPlayer();
+        Inventory inventory = event.getInventory();
+        String menuName = inventory.getFileName();
+
+        // Track open count
+        menuOpenCounts.merge(menuName, 1, Integer::sum);
+
+        // Track last open time
+        lastMenuOpen.put(player.getUniqueId(), System.currentTimeMillis());
+
+        // Log for debugging
+        plugin.getLogger().info(String.format(
+            "[Analytics] %s opened %s (total opens: %d)",
+            player.getName(),
+            menuName,
+            menuOpenCounts.get(menuName)
+        ));
+    }
+
+    public int getOpenCount(String menuName) {
+        return menuOpenCounts.getOrDefault(menuName, 0);
+    }
+
+    public Map<String, Integer> getAllStats() {
+        return new HashMap<>(menuOpenCounts);
+    }
+
+    public void printStats() {
+        plugin.getLogger().info("=== Menu Analytics ===");
+        menuOpenCounts.entrySet().stream()
+            .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+            .forEach(entry -> {
+                plugin.getLogger().info(entry.getKey() + ": " + entry.getValue() + " opens");
+            });
+    }
+}
+
+Complete Example: Menu Access Control
+Control access to menus based on custom conditions:
+
+package com.example.access;
+
+import fr.maxlego08.menu.api.Inventory;
+import fr.maxlego08.menu.api.event.PlayerOpenInventoryEvent;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+public class MenuAccessController implements Listener {
+
+    // Menus that require VIP
+    private final Set<String> vipMenus = new HashSet<>();
+
+    // Menus with cooldowns
+    private final Map<String, Long> menuCooldowns = new HashMap<>();
+    private final Map<UUID, Map<String, Long>> playerCooldowns = new HashMap<>();
+
+    public MenuAccessController() {
+        // Configure VIP menus
+        vipMenus.add("vip-shop");
+        vipMenus.add("vip-rewards");
+        vipMenus.add("premium-features");
+
+        // Configure cooldowns (in milliseconds)
+        menuCooldowns.put("daily-rewards", 60000L); // 1 minute
+        menuCooldowns.put("spin-wheel", 300000L);   // 5 minutes
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onMenuOpen(PlayerOpenInventoryEvent event) {
+        if (event.isCancelled()) return;
+
+        Player player = event.getPlayer();
+        Inventory inventory = event.getInventory();
+        String menuName = inventory.getFileName();
+
+        // Check VIP requirement
+        if (vipMenus.contains(menuName) && !player.hasPermission("server.vip")) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "This menu requires VIP rank!");
+            return;
+        }
+
+        // Check cooldown
+        if (menuCooldowns.containsKey(menuName)) {
+            long cooldown = menuCooldowns.get(menuName);
+            long lastOpen = getLastOpen(player.getUniqueId(), menuName);
+            long now = System.currentTimeMillis();
+
+            if (now - lastOpen < cooldown) {
+                event.setCancelled(true);
+                long remaining = (cooldown - (now - lastOpen)) / 1000;
+                player.sendMessage(ChatColor.RED + "Please wait " + remaining +
+                    " seconds before opening this menu again!");
+                return;
+            }
+
+            // Update last open time
+            setLastOpen(player.getUniqueId(), menuName, now);
+        }
+    }
+
+    private long getLastOpen(UUID uuid, String menu) {
+        return playerCooldowns
+            .getOrDefault(uuid, new HashMap<>())
+            .getOrDefault(menu, 0L);
+    }
+
+    private void setLastOpen(UUID uuid, String menu, long time) {
+        playerCooldowns
+            .computeIfAbsent(uuid, k -> new HashMap<>())
+            .put(menu, time);
+    }
+
+    public void addVipMenu(String menuName) {
+        vipMenus.add(menuName);
+    }
+
+    public void setMenuCooldown(String menuName, long milliseconds) {
+        menuCooldowns.put(menuName, milliseconds);
+    }
+}
+
+Complete Example: Menu Logging
+Log all menu interactions for auditing:
+
+package com.example.logging;
+
+import fr.maxlego08.menu.api.event.InventoryLoadEvent;
+import fr.maxlego08.menu.api.event.PlayerOpenInventoryEvent;
+import fr.maxlego08.menu.api.event.ButtonLoadEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class MenuLogger implements Listener {
+
+    private final JavaPlugin plugin;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final File logFile;
+
+    public MenuLogger(JavaPlugin plugin) {
+        this.plugin = plugin;
+        this.logFile = new File(plugin.getDataFolder(), "menu-log.txt");
+    }
+
+    @EventHandler
+    public void onInventoryLoad(InventoryLoadEvent event) {
+        log("INVENTORY_LOAD", "Loaded inventory: " + event.getInventory().getFileName());
+    }
+
+    @EventHandler
+    public void onButtonLoad(ButtonLoadEvent event) {
+        log("BUTTON_LOAD", "Loaded button: " + event.getButton().getName());
+    }
+
+    @EventHandler
+    public void onMenuOpen(PlayerOpenInventoryEvent event) {
+        String message = String.format("Player %s opened menu %s",
+            event.getPlayer().getName(),
+            event.getInventory().getFileName());
+        log("MENU_OPEN", message);
+    }
+
+    private void log(String type, String message) {
+        String timestamp = dateFormat.format(new Date());
+        String logLine = String.format("[%s] [%s] %s", timestamp, type, message);
+
+        // Log to console
+        plugin.getLogger().info(logLine);
+
+        // Log to file
+        try (PrintWriter writer = new PrintWriter(new FileWriter(logFile, true))) {
+            writer.println(logLine);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to write to log file: " + e.getMessage());
+        }
+    }
+}
+
+Event Priorities
+Use event priorities to control when your listener runs:
+
+// Run first (before other plugins)
+@EventHandler(priority = EventPriority.LOWEST)
+public void onMenuOpenFirst(PlayerOpenInventoryEvent event) {
+    // ...
+}
+
+// Run last (after other plugins)
+@EventHandler(priority = EventPriority.HIGHEST)
+public void onMenuOpenLast(PlayerOpenInventoryEvent event) {
+    // ...
+}
+
+// Run even if cancelled
+@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+public void onMenuOpenMonitor(PlayerOpenInventoryEvent event) {
+    // Just observe, don't modify
+}
+
+Best Practices
+Don't block events unnecessarily - Only cancel when needed
+Use appropriate priorities - LOWEST for modifications, MONITOR for logging
+Handle exceptions - Don't let errors crash event handling
+Keep listeners lightweight - Avoid heavy operations in event handlers
+Register listeners properly - Use the plugin manager
+Next Steps
+Create Custom Buttons
+Create Custom Actions
+Work with Player Data
+Review the API Introduction
